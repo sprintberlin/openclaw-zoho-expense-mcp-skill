@@ -3,11 +3,13 @@
 from __future__ import annotations
 
 from pathlib import Path
+import re
 import unittest
 
 
 REPOSITORY = Path(__file__).resolve().parents[1]
 PROFILE = REPOSITORY / "references" / "ACTION_PROFILES.md"
+WORKFLOWS = REPOSITORY / "references" / "COMMON_WORKFLOWS.md"
 CATALOG = REPOSITORY / "references" / "ZOHO_EXPENSE_MCP_ACTIONS.md"
 
 
@@ -35,6 +37,33 @@ def profile_actions() -> list[str]:
         if in_action_block and stripped:
             actions.append(stripped)
     return actions
+
+
+def workflow_action_names() -> set[str]:
+    prefixes = (
+        "list ",
+        "get ",
+        "create ",
+        "update ",
+        "add ",
+        "remove ",
+        "validate ",
+        "submit ",
+        "approve ",
+        "reject ",
+        "reimburse ",
+        "forward ",
+        "takeback ",
+        "skip ",
+        "split ",
+    )
+    names: set[str] = set()
+    for span in re.findall(r"`([^`]+)`", WORKFLOWS.read_text(encoding="utf-8")):
+        if span.startswith("ZohoExpense_"):
+            continue
+        if span.startswith(prefixes):
+            names.add(span)
+    return names
 
 
 class ActionProfileTests(unittest.TestCase):
@@ -66,6 +95,7 @@ class ActionProfileTests(unittest.TestCase):
             "get expense report",
             "create expense report",
             "validate expense report",
+            "submit expense report",
         }
         self.assertEqual(sorted(required - actions), [])
 
@@ -77,6 +107,11 @@ class ActionProfileTests(unittest.TestCase):
             "reimburse expense report",
         }
         self.assertEqual(sorted(required - actions), [])
+
+    def test_workflow_actions_exist_in_catalog(self):
+        catalog = catalog_actions()
+        missing = sorted(workflow_action_names() - catalog)
+        self.assertEqual(missing, [])
 
 
 if __name__ == "__main__":

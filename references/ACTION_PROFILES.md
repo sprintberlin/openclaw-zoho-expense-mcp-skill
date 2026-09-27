@@ -58,6 +58,7 @@ add expenses to expense report
 remove expenses from expense report
 add comment to expense report
 validate expense report
+submit expense report
 approval history expense report
 get expense report attachment
 get expense report receipt
