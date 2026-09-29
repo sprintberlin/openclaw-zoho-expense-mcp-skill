@@ -99,3 +99,15 @@ Mixed expense currencies are valid. Verify organization-currency conversion and 
 expense: unreported -> report: draft -> submitted -> approved -> reimbursed
                          recalled <----+
 ```
+
+## Export expense report PDF
+
+Zoho Expense MCP actions serialize binary responses into text strings, which corrupts `%PDF` bytes. For native formatted PDF exports of reports:
+
+1. Use the companion [zoho-attachment-bridge](https://github.com/sprintberlin/zoho-attachment-bridge) (`scripts/zoho_download.py`).
+2. Required OAuth scope on the bridge Self Client: `ZohoExpense.expensereport.READ`.
+3. Command:
+   ```bash
+   python3 scripts/zoho_download.py --app expense --target report-pdf      --id <report_id> --out <path.pdf> [--organization-id <id>]
+   ```
+4. Verifies `%PDF` header bytes and writes atomically with mode `0600`.

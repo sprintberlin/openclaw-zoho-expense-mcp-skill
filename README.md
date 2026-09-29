@@ -100,6 +100,12 @@ python3 scripts/list_records.py expenses --limit 20
 - `references/MULTI_ACCOUNT.md`: Portable endpoint profiles.
 - `tests/`: Credential-free catalog, helper, and resolver tests.
 
+## Binary attachments and PDF downloads
+
+Zoho Expense MCP handles structured JSON records, metadata, and workflow states. For binary transfers that MCP cannot safely move (receipt uploads when MCP upload actions fail silently, or formatted expense report PDF downloads where MCP corrupts binary streams into UTF-8 text), use the companion skill:
+
+- [sprintberlin/zoho-attachment-bridge](https://github.com/sprintberlin/zoho-attachment-bridge): REST multipart uploads and verified binary downloads (`ZohoExpense.expensereport.READ`).
+
 ## Security Notes
 
 The bundled scripts call `mcporter` directly through `subprocess.run([...])` without shell expansion. Expense records, employee data, and receipts are sensitive. Load only required records and never copy their contents into chats, logs, or repositories.

@@ -130,6 +130,14 @@ Contributions are explicitly welcome from humans and agents. An Expense task is 
 
 Do not file skill issues for endpoint/auth/profile setup, rate limits, transient service failures, timeouts, organization-specific custom fields, or unsupported Expense operations. Never include MCP URLs, tokens, record content, employee data, receipts, or customer data.
 
+## Binary files and report PDF export
+
+Zoho Expense MCP moves metadata and JSON records. MCP is binary-unsafe for file streams (corrupts raw PDF bytes to UTF-8).
+
+- For binary receipt uploads and native expense report PDF downloads, use the companion [zoho-attachment-bridge](https://github.com/sprintberlin/zoho-attachment-bridge).
+- Expense report PDF download: `python3 scripts/zoho_download.py --app expense --target report-pdf --id <report_id> --out <path.pdf>`.
+- Requires `ZohoExpense.expensereport.READ` scope on the bridge Self Client.
+
 ## References
 
 - [Action catalog](references/actions.jsonl): 184 Zoho Expense Actions in machine-readable JSONL
