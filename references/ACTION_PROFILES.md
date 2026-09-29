@@ -1,126 +1,62 @@
-# Recommended Zoho Expense MCP Action Profiles
+# Zoho Expense MCP Action Profiles & Task Recipes
 
-Zoho Expense exposes 184 MCP Actions. Do not enable the entire catalog for a normal agent. Use the recommended **Expense Auditor & Submitter** profile for day-to-day expense capture, report assembly, and status checking.
+The machine-readable source of truth is [`references/profiles.json`](profiles.json), validated against [`references/actions.jsonl`](actions.jsonl). Use `scripts/lookup_actions.py` for copy-ready lists.
 
-Names below match the Zoho MCP setup UI and the complete catalog in `ZOHO_EXPENSE_MCP_ACTIONS.md`. Runtime tools usually appear with the `ZohoExpense_` prefix and underscores instead of spaces, for example `ZohoExpense_list_expenses`.
+## The 300-Action Server Limit
 
-## Profile overview
+A Zoho MCP server accepts at most 300 selected Actions per connection. Zoho Expense currently exposes 184 Actions, so every profile fits on one server. Use the smallest matching profile anyway so the session tool catalog and permissions stay narrow.
 
-1. **Expense Auditor & Submitter**: recommended operational profile. Covers receipt capture, expenses, report creation, approval status, category and policy inspection, and read-back verification. No bulk mutations, permanent deletions, or administrative configurations.
-2. **Expense Approver / Finance**: for managers and finance users recording reimbursements or reviewing approval queues.
-3. **Expense Administrator**: no blanket profile. Configure approval workflows, custom fields, and organization policies individually.
+| Profile | Resolved Actions | Fits one MCP server |
+|---|---:|---|
+| `expense-viewer` | 72 | yes |
+| `expense-submitter` (inherits `expense-viewer`) | 104 | yes |
+| `expense-approver` (inherits `expense-submitter`) | 121 | yes |
+| `expense-admin` (inherits `expense-approver`) | 163 | yes |
 
----
+## Role Profiles
 
-## Profile 1: Expense Auditor & Submitter (Recommended)
-
-Select the following Actions in the Zoho MCP setup UI:
-
-### Organizations, Users, Currencies & Taxes
-
-```text
-list organizations
-get organization
-list users
-get user
-list currencies
-get currency
-list taxes
-get tax
+```bash
+python3 scripts/lookup_actions.py --profiles
+python3 scripts/lookup_actions.py --profile expense-viewer --names-only
+python3 scripts/lookup_actions.py --profile expense-submitter --names-only
+python3 scripts/lookup_actions.py --profile expense-approver --names-only
+python3 scripts/lookup_actions.py --profile expense-admin --names-only
 ```
 
-### Expenses
+### 1. Expense Viewer & Auditor (`expense-viewer`) - 72 Actions
 
-```text
-list expenses
-get expense
-create expense
-update expense
-split expense
-add expense comment
-list expense comments
-add expense documents
-mark document as primary
-list expense duplicates
-skip duplicate expense
-create upload receipts
+Read-only inspection of expenses, reports, receipts, advances, trips, categories, projects, users, taxes, approval history, reimbursement state, policy violations, and analytics. No create, update, approval, reimbursement, or delete Actions.
+
+### 2. Expense Submitter & Drafter (`expense-submitter`) - 104 Actions resolved
+
+Inherits `expense-viewer` and adds receipt capture, expense creation and updates, report assembly and validation, comments, tags, attachments, advance requests, trips, and report submission. It cannot approve, reject, reimburse, or delete records.
+
+### 3. Expense Approver & Finance (`expense-approver`) - 121 Actions resolved
+
+Inherits `expense-submitter` and adds approval, rejection, forwarding, reimbursement, advance decisions, and related finance transitions. Permanent deletion stays excluded.
+
+### 4. Expense Administrator (`expense-admin`) - 163 Actions resolved
+
+Inherits `expense-approver` and adds configuration for users, projects, customers, currencies, taxes, categories, tags, organization settings, archiving, and non-destructive bulk updates. Destructive delete Actions and bulk delete remain excluded.
+
+## Task Recipes
+
+```bash
+python3 scripts/lookup_actions.py --tasks
+python3 scripts/lookup_actions.py --task receipt-capture --names-only
+python3 scripts/lookup_actions.py --task build-expense-report --names-only
+python3 scripts/lookup_actions.py --task submit-and-track-report --names-only
+python3 scripts/lookup_actions.py --task reimbursement-settlement --names-only
 ```
 
-### Expense Reports
-
-```text
-list expense reports
-get expense report
-create expense report
-update expense report
-add expense to report
-add expenses to expense report
-remove expenses from expense report
-add comment to expense report
-validate expense report
-submit expense report
-approval history expense report
-get expense report attachment
-get expense report receipt
-upload expense report attachment
-```
-
-### Categories, Customers, Projects & Tags
-
-```text
-list expense categories
-get expense category
-list customers
-get customer
-list projects
-get project
-get tags
-all tag options
-associate expense tags
-associate tags to expense report
-```
-
-### Analytics & Summary Reads
-
-```text
-get expense list analytics
-get unreported expense list analytics
-get expenses by category analytics
-get expenses by merchant analytics
-get expenses by user analytics
-get expenses by project analytics
-get report list analytics
-get policy violation details analytics
-get expense report budget summary
-get expense report reimbursement
-```
-
----
-
-## Profile 2: Expense Approver / Finance (Additions)
-
-Add these Actions only for authorized finance or manager roles:
-
-```text
-approve expense report
-reject expense report
-forward approval expense report
-takeback expense report
-list advance payments
-get advance payment
-create advance payment
-approve advance payment
-reject advance payment
-reimburse expense report
-get reimbursement details analytics
-get pending reimbursement by user analytics
-get employee liability summary analytics
-```
-
----
+- `receipt-capture`: upload or scan a receipt, create or correct an expense, inspect duplicates, and verify details
+- `build-expense-report`: find unreported expenses, create or update a report, attach expenses, validate it, and read it back
+- `submit-and-track-report`: validate and submit a report, inspect approval history, add a comment, or recall it
+- `reimbursement-settlement`: inspect reimbursement and advance state, record an authorized reimbursement, and verify liabilities
 
 ## Safeguards
 
-- Never enable `delete expense`, `delete expense report`, `bulk delete expense reports`, or other destructive delete Actions in standard agent profiles.
-- Keep approval (`approve expense report`) and reimbursement (`reimburse expense report`) Actions disabled unless the agent has an explicit, authorized mandate to execute approvals or payouts.
-- Submissions (`submit expense report`) and reimbursements trigger downstream financial workflows; always verify records back before triggering them.
+- Do not add `delete expense`, `delete expense report`, `bulk delete expense reports`, or other destructive delete Actions to normal profiles.
+- Keep approval and reimbursement Actions out of `expense-submitter`; they require the explicitly authorized `expense-approver` role.
+- Submissions and reimbursements trigger downstream financial workflows. Validate and read the resulting state back.
+- The catalog describes potentially available Actions. Confirm the selected Actions on the live MCP server with `mcporter list`.

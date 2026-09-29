@@ -1,0 +1,106 @@
+# Action Catalog Format
+
+This document describes how MCP Action knowledge is stored in this skill. The same layout is used by the other Zoho MCP skills (CRM, People, Desk, WorkDrive, Social), so an agent learns the structure once and can then answer "which Actions do I need for this task" across all of them.
+
+## Problem
+
+Zoho Expense exposes 184 MCP Actions. Written as prose Markdown, a large catalog has three defects:
+
+1. An agent must load thousands of lines into context to answer a small question.
+2. Hand-written profile lists drift away from the real catalog, so Action names in a profile may no longer exist.
+3. Zoho adds, renames, and removes Actions, and a prose file makes that invisible in review.
+
+## Design
+
+JSON is the only source of truth. There is no generated or hand-maintained Markdown catalog.
+
+| File | Purpose |
+|---|---|
+| `references/actions.jsonl` | Every known Action, one JSON object per line |
+| `references/profiles.json` | Role profiles and task recipes, referencing Action keys |
+| `scripts/import_actions.py` | Rebuilds `actions.jsonl` from a Zoho MCP setup UI dump |
+| `scripts/lookup_actions.py` | Answers profile, task, and search questions without loading the full catalog |
+
+### Why JSONL for the catalog
+
+One Action per line keeps Git diffs readable. When Zoho changes the catalog, review shows exactly which lines were added, changed, or marked removed, instead of one unreadable blob diff.
+
+### Action record
+
+```json
+{"key": "create_expense_report", "name": "create expense report", "summary": "Create a new report in your organization...", "description": "Full text as delivered by the Zoho MCP setup UI.", "added": "2026-09-29"}
+```
+
+- `key`: unique identifier used by profiles and tasks, formatted in snake_case matching the runtime tool (`ZohoExpense_create_expense_report`).
+- `name`: the Action name shown in the Zoho MCP setup UI (`create expense report`).
+- `summary`: shortened first line for fast scanning and list output.
+- `description`: the untouched description text delivered by Zoho.
+- `added`: date the Action first appeared in the catalog.
+- `removed`: set when an Action disappears from a newer dump.
+
+### Profiles
+
+A profile is what an agent gets by default for a role. Profiles compose through `extends`, so higher profiles do not repeat base actions.
+
+```json
+"expense-submitter": {
+  "name": "Expense Submitter & Drafter",
+  "extends": "expense-viewer",
+  "actions": ["create_expense", "create_expense_report"]
+}
+```
+
+### Task recipes
+
+A task recipe answers the practical question directly: which Actions must be enabled to complete one concrete job, such as capturing a receipt, creating an expense report, or running reimbursement settlements. Recipes are flat, do not inherit, and may overlap freely.
+
+## Usage
+
+```bash
+# Which profiles and task recipes exist
+python3 scripts/lookup_actions.py --profiles
+python3 scripts/lookup_actions.py --tasks
+
+# Which Actions does a role need, inheritance resolved
+python3 scripts/lookup_actions.py --profile expense-viewer
+python3 scripts/lookup_actions.py --profile expense-submitter
+
+# Which Actions does one concrete job need
+python3 scripts/lookup_actions.py --task receipt-capture
+python3 scripts/lookup_actions.py --task build-expense-report
+
+# Copy-ready list for the Zoho MCP setup UI
+python3 scripts/lookup_actions.py --task build-expense-report --names-only
+
+# Find an Action by keyword
+python3 scripts/lookup_actions.py --search "receipt"
+
+# Read the full Zoho description of one Action
+python3 scripts/lookup_actions.py --action create_expense_report
+```
+
+## Maintaining the catalog
+
+1. Open the Zoho MCP setup UI for Zoho Expense and copy the complete Action list into a text file.
+2. Rebuild the catalog:
+
+   ```bash
+   python3 scripts/import_actions.py /tmp/expense_actions_dump.txt --dry-run
+   python3 scripts/import_actions.py /tmp/expense_actions_dump.txt
+   ```
+
+3. Validate that profiles and tasks still reference existing Actions:
+
+   ```bash
+   python3 scripts/lookup_actions.py --validate
+   ```
+
+4. Fix any profile or task entry the validation rejects, then commit.
+
+The catalog describes Actions that can exist for the app. It does not prove that an Action is enabled on a specific MCP server. Always confirm against the live server:
+
+```bash
+mcporter list "$ZOHO_EXPENSE_MCP_URL"
+```
+
+Runtime tool names carry the `ZohoExpense_` prefix; the catalog and setup UI use the bare Action name.

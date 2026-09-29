@@ -66,18 +66,23 @@ The default file is `~/.config/zoho-mcp/profiles.json`. Full format: [`reference
 ## Quick Start
 
 ```bash
+# Query the local JSON catalog
+python3 scripts/lookup_actions.py --profiles
+python3 scripts/lookup_actions.py --task build-expense-report --names-only
+python3 scripts/lookup_actions.py --search "receipt"
+
 # List available tools on the configured MCP server
 mcporter list "$ZOHO_EXPENSE_MCP_URL"
 
-# List organizations
+# List organizations and expenses
 python3 scripts/list_organizations.py
-
-# List expenses
 python3 scripts/list_records.py expenses --limit 20
 ```
 
 ## Python Scripts
 
+- `scripts/lookup_actions.py`: Query Actions, resolved role profiles, and task recipes.
+- `scripts/import_actions.py`: Refresh `actions.jsonl` from a Zoho MCP setup UI dump.
 - `scripts/list_organizations.py`: List accessible Zoho Expense organizations.
 - `scripts/list_records.py`: Query expenses, reports, advances, projects, or users.
 - `scripts/mcp_endpoint.py`: Shared endpoint, profile, and organization resolver.
@@ -87,11 +92,13 @@ python3 scripts/list_records.py expenses --limit 20
 
 - `CONTRIBUTING.md`: Direct GitHub issue and pull request workflow.
 - `SKILL.md`: Agent Skill instructions.
-- `references/ACTION_PROFILES.md`: Least-privilege Expense Action profiles.
+- `references/actions.jsonl`: Machine-readable catalog of 184 known Actions.
+- `references/profiles.json`: Least-privilege role profiles and task recipes.
+- `references/CATALOG_FORMAT.md`: Catalog architecture and maintenance workflow.
+- `references/ACTION_PROFILES.md`: Human-readable profile overview.
 - `references/COMMON_WORKFLOWS.md`: Frequent Expense workflows.
-- `references/ZOHO_EXPENSE_MCP_ACTIONS.md`: Complete catalog of 184 known Actions.
 - `references/MULTI_ACCOUNT.md`: Portable endpoint profiles.
-- `tests/`: Credential-free helper and resolver tests.
+- `tests/`: Credential-free catalog, helper, and resolver tests.
 
 ## Security Notes
 

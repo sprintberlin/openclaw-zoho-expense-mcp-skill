@@ -21,10 +21,27 @@ Treat the endpoint as a credential. Never print it, commit it, or copy it into t
 ## First setup
 
 1. Create or open a Zoho Expense connection at `mcp.zoho.eu`.
-2. Select only required Actions. Start with [references/ACTION_PROFILES.md](references/ACTION_PROFILES.md).
-3. Configure one endpoint with `ZOHO_EXPENSE_MCP_URL`, or named accounts using [references/MULTI_ACCOUNT.md](references/MULTI_ACCOUNT.md).
-4. Configure the organization ID with `ZOHO_EXPENSE_ORGANIZATION_ID` or the selected profile's `organization_id`.
-5. Inspect the selected live server with `mcporter list "$ZOHO_EXPENSE_MCP_URL"`; finish only after the required Actions are present.
+2. Select only required Actions. Resolve the exact list from the JSON catalog:
+
+```bash
+python3 scripts/lookup_actions.py --profiles
+python3 scripts/lookup_actions.py --profile expense-viewer --names-only
+python3 scripts/lookup_actions.py --profile expense-submitter --names-only
+python3 scripts/lookup_actions.py --profile expense-approver --names-only
+python3 scripts/lookup_actions.py --profile expense-admin --names-only
+python3 scripts/lookup_actions.py --task build-expense-report --names-only
+```
+
+3. Search the catalog when a profile or task lacks a required Action:
+
+```bash
+python3 scripts/lookup_actions.py --search "receipt"
+python3 scripts/lookup_actions.py --action create_expense_report
+```
+
+4. Configure one endpoint with `ZOHO_EXPENSE_MCP_URL`, or named accounts using [references/MULTI_ACCOUNT.md](references/MULTI_ACCOUNT.md).
+5. Configure the organization ID with `ZOHO_EXPENSE_ORGANIZATION_ID` or the selected profile's `organization_id`.
+6. Inspect the selected live server with `mcporter list "$ZOHO_EXPENSE_MCP_URL"`; finish only after the required Actions are present.
 
 The catalog describes possible Actions, not what one MCP server has enabled. Runtime names normally use `ZohoExpense_` plus the setup Action name with spaces converted to underscores, for example `ZohoExpense_list_expenses`.
 
@@ -115,13 +132,15 @@ Do not file skill issues for endpoint/auth/profile setup, rate limits, transient
 
 ## References
 
-- [Action profiles](references/ACTION_PROFILES.md): recommended least-privilege Expense profiles
+- [Action catalog](references/actions.jsonl): 184 Zoho Expense Actions in machine-readable JSONL
+- [Profiles and task recipes](references/profiles.json): least-privilege profiles and task recipes
+- [Catalog format](references/CATALOG_FORMAT.md): architecture and CLI query documentation
+- [Action profiles overview](references/ACTION_PROFILES.md): human-readable role and recipe reference
 - [Common workflows](references/COMMON_WORKFLOWS.md): ordered procedures for frequent Expense tasks
-- [Complete Expense Actions catalog](references/ZOHO_EXPENSE_MCP_ACTIONS.md): all 184 known Expense Actions and descriptions
 - [Multi-account profiles](references/MULTI_ACCOUNT.md): portable routing for CRM, People, Books, and Expense
 - [Contributing guide](CONTRIBUTING.md): issue and pull request workflows for humans and agents
 
-Load the profile reference while configuring a connection. Load a workflow while performing that task. Load the full catalog only when the profiles do not contain a required Action.
+Query the catalog with `scripts/lookup_actions.py` instead of loading `actions.jsonl` into context.
 
 ## Troubleshooting
 
